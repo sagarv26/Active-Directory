@@ -1,0 +1,27 @@
+# Modify AD User Extension Attributes from csv File.
+# Check if the account exists then check for the matching conditions that can be changed 
+# You can add any other attribute to be modifyed if necesary inside the If Condition
+
+
+$UsersToReplace    = Import-Csv "UsersListFile.csv" -Encoding Default # The csv File must containg the SAMaccountName  
+$DesiredValueExt15 = ' ' 
+$Counter           = $UsersToReplace.count 
+ 
+Foreach($User in $UsersToReplace) 
+ { 
+  $Counter-- 
+  $ADUserExists = Get-ADUser $User.SAMAccountName -Properties Extensionattribute15,Extensionattribute14 # Add any desired attribute that will be modified 
+  
+  If($ADUserExists) 
+   { 
+    If($ADUserExists?.Extensionattribute15 -like "*HPLaptop*") 
+     { 
+      Write-Host "($Counter) Modifying User Extension attribute 15: " $ADUserExists.SamAccountName -ForegroundColor Cyan 
+      Set-ADUser $User.SAMAccountName -Replace @{Extensionattribute15 = $DesiredValueExt15} 
+     } 
+    Else 
+     { 
+      Write-Host "($Counter) User Extension attribute 15 not Like Desired value: "  $ADUserExists.SamAccountName -ForegroundColor Yellow 
+     } 
+   } 
+ } 
