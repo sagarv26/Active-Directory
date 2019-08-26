@@ -1,0 +1,37 @@
+# PowerShell script to use when a new password expiration policy is to be 
+# first applied to a domain. All users in the CSV file will have their 
+# passwords expire X days after they next logon, where X is the new password 
+# expiration policy in days. This script should be run during off hours. 
+ 
+# Specify the DNS name of a nearby Domain Controller, so all updates are 
+# performed on the same DC. This avoids possible problems due to the 
+# time it takes updates to synchronize between DCs. 
+$DC = "MyDC.MyDomain.com" 
+ 
+# Read user sAMAccountNames from the CSV file. 
+# The header line should define this field as "ID". 
+# If you have a series of CSV files, the filename should be updated each time 
+# this script is run. 
+$Users = Import-Csv .\Users.csv 
+ 
+# Assign 0 to the pwdLastSet attribute for all users in the CSV. 
+# This expires the password immediately. 
+ForEach ($User In $Users) 
+{ 
+    $ID = $User.ID 
+    # $ID is in quotes because the sAMAccountName can include spaces. 
+    Set-ADUser -Server $DC -Identity "$ID" -Replace @{pwdLastSet=0} 
+} 
+ 
+# Assign -1 to the pwdLastSet attribute for all users in the CSV. Because of 
+# the way 64-bit integers are saved, this is the largest possible value that 
+# can be saved in a LargeInteger attribute. It corresponds to a date far in 
+# the future. But the system will assign a value corresponding to the current 
+# datetime the next time the user logs on. The password will then expire 
+# according to the maximum password age policy that applies to the user. 
+ForEach ($User In $Users) 
+{ 
+    $ID = $User.ID 
+    # $ID is in quotes because the sAMAccountName can include spaces. 
+    Set-ADUser -server $DC -Identity "$ID" -Replace @{pwdLastSet=-1} 
+} 
